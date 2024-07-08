@@ -2,9 +2,12 @@ import express, { Request, Response } from 'express';
 import { readJson, writeJson } from 'fs-extra';
 import path from 'path';
 import bodyParser from 'body-parser';
-
+const cors = require('cors');
 const app = express();
 const port = 3000;
+
+// Habilitar CORS para todas las rutas
+app.use(cors());
 
 // Middleware para parsear el cuerpo de las solicitudes
 app.use(bodyParser.json());
