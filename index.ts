@@ -2,9 +2,32 @@ import express, { Request, Response } from 'express';
 import { readJson, writeJson } from 'fs-extra';
 import path from 'path';
 import bodyParser from 'body-parser';
+import swaggerJsdoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
 const cors = require('cors');
 const app = express();
 const port = 3000;
+
+// Configuración de Swagger
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'API de Ejemplo',
+      version: '1.0.0',
+      description: 'Esta es una API de ejemplo documentada con Swagger.'
+    },
+    servers: [
+      {
+        url: `http://localhost:${port}`
+      }
+    ]
+  },
+  apis: ['./index.ts'], // Ajusta esto según la ubicación de tu archivo
+};
+
+const swaggerDocs = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Habilitar CORS para todas las rutas
 app.use(cors());
@@ -18,12 +41,33 @@ const errorHandler = (res: Response, statusCode: number, message: string) => {
   res.status(statusCode).send(message);
 };
 
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     summary: Ruta raíz
+ *     responses:
+ *       200:
+ *         description: Respuesta exitosa
+ */
 app.get('/', (req: Request, res: Response) => {
   console.log("Ruta raíz / fue accedida");
   res.send('Proyecto backend Linktic');
 });
 
-// Ruta para obtener la lista de productos
+/**
+ * @swagger
+ * /products:
+ *   get:
+ *     summary: Obtener lista de productos
+ *     responses:
+ *       200:
+ *         description: Lista de productos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ */
 app.get('/products', async (req: Request, res: Response) => {
   try {
     console.log("Ruta /products fue accedida");
@@ -38,7 +82,24 @@ app.get('/products', async (req: Request, res: Response) => {
   }
 });
 
-// Ruta para obtener un producto por idProduct
+/**
+ * @swagger
+ * /products/{id}:
+ *   get:
+ *     summary: Obtener un producto por idProduct
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID del producto
+ *     responses:
+ *       200:
+ *         description: Producto encontrado
+ *       404:
+ *         description: Producto no encontrado
+ */
 app.get('/products/:id', async (req: Request, res: Response) => {
   const idProduct = parseInt(req.params.id);
   try {
@@ -61,7 +122,21 @@ app.get('/products/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Ruta para crear un nuevo producto
+/**
+ * @swagger
+ * /products:
+ *   post:
+ *     summary: Crear un nuevo producto
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       201:
+ *         description: Producto creado
+ */
 app.post('/products', async (req: Request, res: Response) => {
   try {
     const newProduct = req.body;
@@ -85,7 +160,30 @@ app.post('/products', async (req: Request, res: Response) => {
   }
 });
 
-// Ruta para actualizar un producto por idProduct
+/**
+ * @swagger
+ * /products/{id}:
+ *   put:
+ *     summary: Actualizar un producto por idProduct
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID del producto
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Producto actualizado
+ *       404:
+ *         description: Producto no encontrado
+ */
 app.put('/products/:id', async (req: Request, res: Response) => {
   const idProduct = parseInt(req.params.id);
   const updatedProduct = req.body;
@@ -113,7 +211,24 @@ app.put('/products/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Ruta para eliminar un producto por idProduct
+/**
+ * @swagger
+ * /products/{id}:
+ *   delete:
+ *     summary: Eliminar un producto por idProduct
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID del producto
+ *     responses:
+ *       204:
+ *         description: Producto eliminado
+ *       404:
+ *         description: Producto no encontrado
+ */
 app.delete('/products/:id', async (req: Request, res: Response) => {
   const idProduct = parseInt(req.params.id);
   try {
@@ -138,9 +253,19 @@ app.delete('/products/:id', async (req: Request, res: Response) => {
   }
 });
 
-
-
-// Ruta para obtener la lista de pedidos
+/**
+ * @swagger
+ * /orders:
+ *   get:
+ *     summary: Obtener lista de pedidos
+ *     responses:
+ *       200:
+ *         description: Lista de pedidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ */
 app.get('/orders', async (req: Request, res: Response) => {
   try {
     const filePath = path.join(__dirname, './orders.json');
@@ -151,7 +276,24 @@ app.get('/orders', async (req: Request, res: Response) => {
   }
 });
 
-// Ruta para obtener un pedido por order_id
+/**
+ * @swagger
+ * /orders/{id}:
+ *   get:
+ *     summary: Obtener un pedido por order_id
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID del pedido
+ *     responses:
+ *       200:
+ *         description: Pedido encontrado
+ *       404:
+ *         description: Pedido no encontrado
+ */
 app.get('/orders/:id', async (req: Request, res: Response) => {
   const orderId = parseInt(req.params.id);
   try {
@@ -169,7 +311,21 @@ app.get('/orders/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Ruta para crear un nuevo pedido
+/**
+ * @swagger
+ * /orders:
+ *   post:
+ *     summary: Crear un nuevo pedido
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       201:
+ *         description: Pedido creado
+ */
 app.post('/orders', async (req: Request, res: Response) => {
   try {
     const newOrder = req.body;
@@ -190,7 +346,30 @@ app.post('/orders', async (req: Request, res: Response) => {
   }
 });
 
-// Ruta para actualizar un pedido por order_id
+/**
+ * @swagger
+ * /orders/{id}:
+ *   put:
+ *     summary: Actualizar un pedido por order_id
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID del pedido
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Pedido actualizado
+ *       404:
+ *         description: Pedido no encontrado
+ */
 app.put('/orders/:id', async (req: Request, res: Response) => {
   const orderId = parseInt(req.params.id);
   const updatedOrder = req.body;
@@ -212,7 +391,24 @@ app.put('/orders/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Ruta para eliminar un pedido por order_id
+/**
+ * @swagger
+ * /orders/{id}:
+ *   delete:
+ *     summary: Eliminar un pedido por order_id
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID del pedido
+ *     responses:
+ *       204:
+ *         description: Pedido eliminado
+ *       404:
+ *         description: Pedido no encontrado
+ */
 app.delete('/orders/:id', async (req: Request, res: Response) => {
   const orderId = parseInt(req.params.id);
   try {
