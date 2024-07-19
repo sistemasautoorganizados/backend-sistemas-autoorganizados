@@ -428,11 +428,179 @@ app.delete('/orders/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Manejador de errores para rutas no encontradas
-app.use((req: Request, res: Response) => {
-  res.status(404).send('Ruta no encontrada');
+/**
+ * @swagger
+ * /usersIntoPage:
+ *   get:
+ *     summary: Obtener lista de usuarios que ingresaron a la página
+ *     responses:
+ *       200:
+ *         description: Lista de usuarios
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ */
+app.get('/usersIntoPage', async (req: Request, res: Response) => {
+  try {
+    const filePath = path.join(__dirname, './usersIntoPage.json');
+    const data = await readJson(filePath);
+    res.json(data);
+  } catch (error) {
+    errorHandler(res, 500, 'Error al leer la base de datos de usuarios');
+  }
+});
+
+/**
+ * @swagger
+ * /usersIntoPage/{id}:
+ *   get:
+ *     summary: Obtener un usuario por idUserGetIntoPage
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID del usuario
+ *     responses:
+ *       200:
+ *         description: Usuario encontrado
+ *       404:
+ *         description: Usuario no encontrado
+ */
+app.get('/usersIntoPage/:id', async (req: Request, res: Response) => {
+  const idUserGetIntoPage = req.params.id;
+  try {
+    const filePath = path.join(__dirname, './usersIntoPage.json');
+    const data = await readJson(filePath);
+    const user = data.find((u: any) => u.idUserGetIntoPage === idUserGetIntoPage);
+
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).send('Usuario no encontrado');
+    }
+  } catch (error) {
+    errorHandler(res, 500, 'Error al leer la base de datos de usuarios');
+  }
+});
+
+/**
+ * @swagger
+ * /usersIntoPage:
+ *   post:
+ *     summary: Crear un nuevo usuario que ingresó a la página
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       201:
+ *         description: Usuario creado
+ */
+app.post('/usersIntoPage', async (req: Request, res: Response) => {
+  try {
+    const newUser = req.body;
+    const filePath = path.join(__dirname, './usersIntoPage.json');
+    const data = await readJson(filePath);
+
+    // Asignar un nuevo ID único
+    newUser.idUserGetIntoPage =Date.now();
+
+    data.push(newUser);
+    await writeJson(filePath, data);
+    
+    res.status(201).json(newUser);
+  } catch (error) {
+    errorHandler(res, 500, 'Error al agregar el usuario');
+  }
+});
+
+/**
+ * @swagger
+ * /usersIntoPage/{id}:
+ *   put:
+ *     summary: Actualizar un usuario por idUserGetIntoPage
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID del usuario
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Usuario actualizado
+ *       404:
+ *         description: Usuario no encontrado
+ */
+app.put('/usersIntoPage/:id', async (req: Request, res: Response) => {
+  const idUserGetIntoPage = req.params.id;
+  const updatedUser = req.body;
+  try {
+    const filePath = path.join(__dirname, './usersIntoPage.json');
+    const data = await readJson(filePath);
+    const index = data.findIndex((u: any) => u.idUserGetIntoPage === idUserGetIntoPage);
+
+    if (index !== -1) {
+      data[index] = { ...data[index], ...updatedUser };
+      await writeJson(filePath, data);
+      
+      res.json(data[index]);
+    } else {
+      res.status(404).send('Usuario no encontrado');
+    }
+  } catch (error) {
+    errorHandler(res, 500, 'Error al actualizar el usuario');
+  }
+});
+
+/**
+ * @swagger
+ * /usersIntoPage/{id}:
+ *   delete:
+ *     summary: Eliminar un usuario por idUserGetIntoPage
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID del usuario
+ *     responses:
+ *       204:
+ *         description: Usuario eliminado
+ *       404:
+ *         description: Usuario no encontrado
+ */
+app.delete('/usersIntoPage/:id', async (req: Request, res: Response) => {
+  const idUserGetIntoPage = req.params.id;
+  try {
+    const filePath = path.join(__dirname, './usersIntoPage.json');
+    let data = await readJson(filePath);
+    const initialLength = data.length;
+    data = data.filter((u: any) => u.idUserGetIntoPage !== idUserGetIntoPage);
+
+    if (data.length < initialLength) {
+      await writeJson(filePath, data);
+      res.status(204).send();
+    } else {
+      res.status(404).send('Usuario no encontrado');
+    }
+  } catch (error) {
+    errorHandler(res, 500, 'Error al eliminar el usuario');
+  }
 });
 
 app.listen(port, () => {
-  console.log(`Servidor corriendo en http://localhost:${port}`);
+  console.log(`Server is running on port ${port}`);
 });
