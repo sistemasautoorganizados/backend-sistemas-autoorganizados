@@ -526,8 +526,19 @@ app.post('/usersIntoPage', async (req: Request, res: Response) => {
     const minutes = String(currentDate.getMinutes()).padStart(2, '0')
     newUser.hourGetIntoPage = `${hours}:${minutes}`
 
-    // Time
-    const rh = String(Math.floor(Math.random() * 2)).padStart(2, '0')
+    const biasedRandom = () => {
+      const random = Math.floor(Math.random() * 100);
+      if (random <= 88) {
+        return '00'; // `00` tiene una mayor probabilidad de ser elegido
+      } else if (random > 88 && random <= 96) {
+        return '01'
+      }else {
+        return '02'
+      }
+    };
+    
+    // Generar `rh` con una mayor probabilidad de ser `00`
+    const rh = biasedRandom()
     const rm = String(Math.floor(Math.random() * 25)).padStart(2, '0')
     const rs = String(Math.floor(Math.random() * 61)).padStart(2, '0')
 
