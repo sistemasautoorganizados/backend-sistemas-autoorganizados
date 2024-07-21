@@ -504,20 +504,43 @@ app.get('/usersIntoPage/:id', async (req: Request, res: Response) => {
 app.post('/usersIntoPage', async (req: Request, res: Response) => {
   try {
     const newUser = req.body;
-    const filePath = path.join(__dirname, './usersIntoPage.json');
-    const data = await readJson(filePath);
+    
+    const filePath = path.join(__dirname, './usersIntoPage.json')
+    const data = await readJson(filePath)
+
+    const rl1 = String.fromCharCode(65 + Math.floor(Math.random() * 26))
+    const rl2 = String.fromCharCode(65 + Math.floor(Math.random() * 26))
+    const rl3 = String.fromCharCode(65 + Math.floor(Math.random() * 26))
+    const rl4 = String.fromCharCode(65 + Math.floor(Math.random() * 26))
 
     // Asignar un nuevo ID único
-    newUser.idUserGetIntoPage =Date.now();
+    newUser.idUserGetIntoPage = rl1+rl2+rl3+rl4+(Date.now()).toString()
 
-    data.push(newUser);
-    await writeJson(filePath, data);
+    // Fecha
+    const currentDate = new Date()
+    const formattedDate = currentDate.toISOString().split('T')[0]
+    newUser.dateGetIntoPage = formattedDate
+
+    // Hora
+    const hours = String(currentDate.getHours()).padStart(2, '0')
+    const minutes = String(currentDate.getMinutes()).padStart(2, '0')
+    newUser.hourGetIntoPage = `${hours}:${minutes}`
+
+    // Time
+    const rh = String(Math.floor(Math.random() * 2)).padStart(2, '0')
+    const rm = String(Math.floor(Math.random() * 25)).padStart(2, '0')
+    const rs = String(Math.floor(Math.random() * 61)).padStart(2, '0')
+
+    newUser.timeIntoPage = `${rh}:${rm}:${rs}`
+
+    data.push(newUser)
+    await writeJson(filePath, data)
     
-    res.status(201).json(newUser);
+    res.status(201).json(newUser)
   } catch (error) {
-    errorHandler(res, 500, 'Error al agregar el usuario');
+    errorHandler(res, 500, 'Error al agregar el usuario')
   }
-});
+})
 
 /**
  * @swagger
@@ -588,7 +611,7 @@ app.delete('/usersIntoPage/:id', async (req: Request, res: Response) => {
     const filePath = path.join(__dirname, './usersIntoPage.json');
     let data = await readJson(filePath);
     const initialLength = data.length;
-    data = data.filter((u: any) => u.idUserGetIntoPage !== idUserGetIntoPage);
+    data = data.filter((u: any) => u.idUserGetIntoPage !== String(idUserGetIntoPage));
 
     if (data.length < initialLength) {
       await writeJson(filePath, data);
