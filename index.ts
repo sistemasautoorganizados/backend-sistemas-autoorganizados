@@ -1,6 +1,5 @@
 import express, { Request, Response } from 'express';
-import { readJson, writeJson } from 'fs-extra';
-import path from 'path';
+import { query } from './db';
 import bodyParser from 'body-parser';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
@@ -51,381 +50,7 @@ const errorHandler = (res: Response, statusCode: number, message: string) => {
  *         description: Respuesta exitosa
  */
 app.get('/', (req: Request, res: Response) => {
-  console.log("Ruta raíz / fue accedida");
-  res.send('Proyecto backend Linktic');
-});
-
-/**
- * @swagger
- * /products:
- *   get:
- *     summary: Obtener lista de productos
- *     responses:
- *       200:
- *         description: Lista de productos
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- */
-app.get('/products', async (req: Request, res: Response) => {
-  try {
-    console.log("Ruta /products fue accedida");
-    const filePath = path.join(__dirname, './products.json');
-    console.log(`Leyendo archivo de: ${filePath}`);
-    const data = await readJson(filePath);
-    console.log("Datos leídos de products.json:", data);
-    res.json(data);
-  } catch (error) {
-    console.error("Error al leer la base de datos:", error);
-    res.status(500).send('Error al leer la base de datos');
-  }
-});
-
-/**
- * @swagger
- * /products/{id}:
- *   get:
- *     summary: Obtener un producto por idProduct
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: integer
- *         required: true
- *         description: ID del producto
- *     responses:
- *       200:
- *         description: Producto encontrado
- *       404:
- *         description: Producto no encontrado
- */
-app.get('/products/:id', async (req: Request, res: Response) => {
-  const idProduct = parseInt(req.params.id);
-  try {
-    console.log(`Ruta /products/${idProduct} fue accedida`);
-    const filePath = path.join(__dirname, './products.json');
-    console.log(`Leyendo archivo de: ${filePath}`);
-    const data = await readJson(filePath);
-    const product = data.find((p: any) => p.idProduct === idProduct);
-
-    if (product) {
-      console.log(`Producto encontrado: ${JSON.stringify(product)}`);
-      res.json(product);
-    } else {
-      console.log(`Producto con idProduct ${idProduct} no encontrado`);
-      res.status(404).send('Producto no encontrado');
-    }
-  } catch (error) {
-    console.error("Error al leer la base de datos:", error);
-    res.status(500).send('Error al leer la base de datos');
-  }
-});
-
-/**
- * @swagger
- * /products:
- *   post:
- *     summary: Crear un nuevo producto
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
- *       201:
- *         description: Producto creado
- */
-app.post('/products', async (req: Request, res: Response) => {
-  try {
-    const newProduct = req.body;
-    console.log("Nuevo producto recibido:", newProduct);
-
-    const filePath = path.join(__dirname, './products.json');
-    const data = await readJson(filePath);
-
-    // Asignar un nuevo ID
-    const newId = data.length > 0 ? data[data.length - 1].idProduct + 1 : 1;
-    newProduct.idProduct = newId;
-
-    data.push(newProduct);
-    await writeJson(filePath, data);
-    
-    console.log("Producto agregado:", newProduct);
-    res.status(201).json(newProduct);
-  } catch (error) {
-    console.error("Error al agregar el producto:", error);
-    res.status(500).send('Error al agregar el producto');
-  }
-});
-
-/**
- * @swagger
- * /products/{id}:
- *   put:
- *     summary: Actualizar un producto por idProduct
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: integer
- *         required: true
- *         description: ID del producto
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
- *       200:
- *         description: Producto actualizado
- *       404:
- *         description: Producto no encontrado
- */
-app.put('/products/:id', async (req: Request, res: Response) => {
-  const idProduct = parseInt(req.params.id);
-  const updatedProduct = req.body;
-  try {
-    console.log(`Ruta PUT /products/${idProduct} fue accedida`);
-    const filePath = path.join(__dirname, './products.json');
-    console.log(`Leyendo archivo de: ${filePath}`);
-    const data = await readJson(filePath);
-    const index = data.findIndex((p: any) => p.idProduct === idProduct);
-
-    if (index !== -1) {
-      // Actualizar el producto en la lista
-      data[index] = { ...data[index], ...updatedProduct };
-      await writeJson(filePath, data);
-      
-      console.log(`Producto actualizado: ${JSON.stringify(data[index])}`);
-      res.json(data[index]);
-    } else {
-      console.log(`Producto con idProduct ${idProduct} no encontrado`);
-      res.status(404).send('Producto no encontrado');
-    }
-  } catch (error) {
-    console.error("Error al actualizar el producto:", error);
-    res.status(500).send('Error al actualizar el producto');
-  }
-});
-
-/**
- * @swagger
- * /products/{id}:
- *   delete:
- *     summary: Eliminar un producto por idProduct
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: integer
- *         required: true
- *         description: ID del producto
- *     responses:
- *       204:
- *         description: Producto eliminado
- *       404:
- *         description: Producto no encontrado
- */
-app.delete('/products/:id', async (req: Request, res: Response) => {
-  const idProduct = parseInt(req.params.id);
-  try {
-    console.log(`Ruta DELETE /products/${idProduct} fue accedida`);
-    const filePath = path.join(__dirname, './products.json');
-    console.log(`Leyendo archivo de: ${filePath}`);
-    let data = await readJson(filePath);
-    const initialLength = data.length;
-    data = data.filter((p: any) => p.idProduct !== idProduct);
-
-    if (data.length < initialLength) {
-      await writeJson(filePath, data);
-      console.log(`Producto con idProduct ${idProduct} eliminado`);
-      res.status(204).send();
-    } else {
-      console.log(`Producto con idProduct ${idProduct} no encontrado`);
-      res.status(404).send('Producto no encontrado');
-    }
-  } catch (error) {
-    console.error("Error al eliminar el producto:", error);
-    res.status(500).send('Error al eliminar el producto');
-  }
-});
-
-/**
- * @swagger
- * /orders:
- *   get:
- *     summary: Obtener lista de pedidos
- *     responses:
- *       200:
- *         description: Lista de pedidos
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- */
-app.get('/orders', async (req: Request, res: Response) => {
-  try {
-    const filePath = path.join(__dirname, './orders.json');
-    const data = await readJson(filePath);
-    res.json(data);
-  } catch (error) {
-    errorHandler(res, 500, 'Error al leer la base de datos de pedidos');
-  }
-});
-
-/**
- * @swagger
- * /orders/{id}:
- *   get:
- *     summary: Obtener un pedido por order_id
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: integer
- *         required: true
- *         description: ID del pedido
- *     responses:
- *       200:
- *         description: Pedido encontrado
- *       404:
- *         description: Pedido no encontrado
- */
-app.get('/orders/:id', async (req: Request, res: Response) => {
-  const orderId = parseInt(req.params.id);
-  try {
-    const filePath = path.join(__dirname, './orders.json');
-    const data = await readJson(filePath);
-    const order = data.find((o: any) => o.order_id === orderId);
-
-    if (order) {
-      res.json(order);
-    } else {
-      res.status(404).send('Pedido no encontrado');
-    }
-  } catch (error) {
-    errorHandler(res, 500, 'Error al leer la base de datos de pedidos');
-  }
-});
-
-/**
- * @swagger
- * /orders:
- *   post:
- *     summary: Crear un nuevo pedido
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
- *       201:
- *         description: Pedido creado
- */
-app.post('/orders', async (req: Request, res: Response) => {
-  try {
-    const newOrder = req.body;
-    const filePath = path.join(__dirname, './orders.json');
-    const data = await readJson(filePath);
-
-    // Asignar un nuevo ID de pedido
-    const newOrderId = data.length > 0 ? data[data.length - 1].order_id + 1 : 1;
-    newOrder.order_id = newOrderId;
-    newOrder.order_date = new Date();
-
-    data.push(newOrder);
-    await writeJson(filePath, data);
-    
-    res.status(201).json(newOrder);
-  } catch (error) {
-    errorHandler(res, 500, 'Error al agregar el pedido');
-  }
-});
-
-/**
- * @swagger
- * /orders/{id}:
- *   put:
- *     summary: Actualizar un pedido por order_id
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: integer
- *         required: true
- *         description: ID del pedido
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
- *       200:
- *         description: Pedido actualizado
- *       404:
- *         description: Pedido no encontrado
- */
-app.put('/orders/:id', async (req: Request, res: Response) => {
-  const orderId = parseInt(req.params.id);
-  const updatedOrder = req.body;
-  try {
-    const filePath = path.join(__dirname, './orders.json');
-    const data = await readJson(filePath);
-    const index = data.findIndex((o: any) => o.order_id === orderId);
-
-    if (index !== -1) {
-      data[index] = { ...data[index], ...updatedOrder };
-      await writeJson(filePath, data);
-      
-      res.json(data[index]);
-    } else {
-      res.status(404).send('Pedido no encontrado');
-    }
-  } catch (error) {
-    errorHandler(res, 500, 'Error al actualizar el pedido');
-  }
-});
-
-/**
- * @swagger
- * /orders/{id}:
- *   delete:
- *     summary: Eliminar un pedido por order_id
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: integer
- *         required: true
- *         description: ID del pedido
- *     responses:
- *       204:
- *         description: Pedido eliminado
- *       404:
- *         description: Pedido no encontrado
- */
-app.delete('/orders/:id', async (req: Request, res: Response) => {
-  const orderId = parseInt(req.params.id);
-  try {
-    const filePath = path.join(__dirname, './orders.json');
-    let data = await readJson(filePath);
-    const initialLength = data.length;
-    data = data.filter((o: any) => o.order_id !== orderId);
-
-    if (data.length < initialLength) {
-      await writeJson(filePath, data);
-      res.status(204).send();
-    } else {
-      res.status(404).send('Pedido no encontrado');
-    }
-  } catch (error) {
-    errorHandler(res, 500, 'Error al eliminar el pedido');
-  }
+  res.send('Proyecto backend Sistemas Autoorganizados');
 });
 
 /**
@@ -443,9 +68,8 @@ app.delete('/orders/:id', async (req: Request, res: Response) => {
  */
 app.get('/usersIntoPage', async (req: Request, res: Response) => {
   try {
-    const filePath = path.join(__dirname, './usersIntoPage.json');
-    const data = await readJson(filePath);
-    res.json(data);
+    const result = await query('SELECT * FROM user_data');
+    res.json(result);
   } catch (error) {
     errorHandler(res, 500, 'Error al leer la base de datos de usuarios');
   }
@@ -455,7 +79,7 @@ app.get('/usersIntoPage', async (req: Request, res: Response) => {
  * @swagger
  * /usersIntoPage/{id}:
  *   get:
- *     summary: Obtener un usuario por idUserGetIntoPage
+ *     summary: Obtener un usuario por user_id
  *     parameters:
  *       - in: path
  *         name: id
@@ -470,14 +94,11 @@ app.get('/usersIntoPage', async (req: Request, res: Response) => {
  *         description: Usuario no encontrado
  */
 app.get('/usersIntoPage/:id', async (req: Request, res: Response) => {
-  const idUserGetIntoPage = req.params.id;
+  const userId = req.params.id;
   try {
-    const filePath = path.join(__dirname, './usersIntoPage.json');
-    const data = await readJson(filePath);
-    const user = data.find((u: any) => u.idUserGetIntoPage === idUserGetIntoPage);
-
-    if (user) {
-      res.json(user);
+    const result = await query('SELECT * FROM user_data WHERE user_id = $1', [userId]);
+    if (result.length > 0) {
+      res.json(result[0]);
     } else {
       res.status(404).send('Usuario no encontrado');
     }
@@ -497,67 +118,89 @@ app.get('/usersIntoPage/:id', async (req: Request, res: Response) => {
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               device:
+ *                 type: string
+ *               path:
+ *                 type: string
+ *               country:
+ *                 type: string
+ *               city:
+ *                 type: string
+ *             required:
+ *               - device
+ *               - path
+ *               - country
+ *               - city
  *     responses:
  *       201:
  *         description: Usuario creado
  */
 app.post('/usersIntoPage', async (req: Request, res: Response) => {
   try {
-    const newUser = req.body;
-    
-    const filePath = path.join(__dirname, './usersIntoPage.json')
-    const data = await readJson(filePath)
+    const { device, path, country, city } = req.body;
 
-    const rl1 = String.fromCharCode(65 + Math.floor(Math.random() * 26))
-    const rl2 = String.fromCharCode(65 + Math.floor(Math.random() * 26))
-    const rl3 = String.fromCharCode(65 + Math.floor(Math.random() * 26))
-    const rl4 = String.fromCharCode(65 + Math.floor(Math.random() * 26))
+    if (!device || !path || !country || !city) {
+      return res.status(400).send('Faltan campos obligatorios');
+    }
 
-    // Asignar un nuevo ID único
-    newUser.idUserGetIntoPage = rl1+rl2+rl3+rl4+(Date.now()).toString()
+    // Generar ID y datos de tiempo
+    const userId = String.fromCharCode(65 + Math.floor(Math.random() * 26))
+                  + String.fromCharCode(65 + Math.floor(Math.random() * 26))
+                  + String.fromCharCode(65 + Math.floor(Math.random() * 26))
+                  + String.fromCharCode(65 + Math.floor(Math.random() * 26))
+                  + (Date.now()).toString();
 
-    // Fecha
-    const currentDate = new Date()
-    const formattedDate = currentDate.toISOString().split('T')[0]
-    newUser.dateGetIntoPage = formattedDate
-
-    // Hora
-    const hours = String(currentDate.getHours()).padStart(2, '0')
-    const minutes = String(currentDate.getMinutes()).padStart(2, '0')
-    newUser.hourGetIntoPage = `${hours}:${minutes}`
+    const currentDate = new Date();
+    const formattedDate = currentDate.toISOString().split('T')[0];
+    const hours = String(currentDate.getHours()).padStart(2, '0');
+    const minutes = String(currentDate.getMinutes()).padStart(2, '0');
+    const time = `${hours}:${minutes}`;
 
     const biasedRandom = () => {
       const random = Math.floor(Math.random() * 100);
       if (random <= 88) {
         return '00'; // `00` tiene una mayor probabilidad de ser elegido
       } else if (random > 88 && random <= 96) {
-        return '01'
-      }else {
-        return '02'
+        return '01';
+      } else {
+        return '02';
       }
     };
-    
-    // Generar `rh` con una mayor probabilidad de ser `00`
-    const rh = biasedRandom()
-    const rm = String(Math.floor(Math.random() * 25)).padStart(2, '0')
-    const rs = String(Math.floor(Math.random() * 61)).padStart(2, '0')
 
-    newUser.timeIntoPage = `${rh}:${rm}:${rs}`
+    const rh = biasedRandom();
+    const rm = String(Math.floor(Math.random() * 25)).padStart(2, '0');
+    const rs = String(Math.floor(Math.random() * 61)).padStart(2, '0');
+    const duration = `${rh}:${rm}:${rs}`;
 
-    data.push(newUser)
-    await writeJson(filePath, data)
-    
-    res.status(201).json(newUser)
+    // Inserta el nuevo usuario en la base de datos
+    await query(
+      'INSERT INTO user_data (user_id, date, time, duration, country, city, path, device) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+      [userId, formattedDate, time, duration, country, city, path, device]
+    );
+
+    // Enviar la respuesta con los datos del nuevo usuario
+    res.status(201).json({
+      user_id: userId,
+      date: formattedDate,
+      time,
+      duration,
+      country,
+      city,
+      path,
+      device
+    });
   } catch (error) {
-    errorHandler(res, 500, 'Error al agregar el usuario')
+    errorHandler(res, 500, 'Error al agregar el usuario');
+    console.log(error);
   }
-})
+});
 
 /**
  * @swagger
  * /usersIntoPage/{id}:
  *   put:
- *     summary: Actualizar un usuario por idUserGetIntoPage
+ *     summary: Actualizar un usuario por user_id
  *     parameters:
  *       - in: path
  *         name: id
@@ -571,6 +214,30 @@ app.post('/usersIntoPage', async (req: Request, res: Response) => {
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               date:
+ *                 type: string
+ *                 format: date
+ *               time:
+ *                 type: string
+ *               duration:
+ *                 type: string
+ *               country:
+ *                 type: string
+ *               city:
+ *                 type: string
+ *               path:
+ *                 type: string
+ *               device:
+ *                 type: string
+ *             required:
+ *               - date
+ *               - time
+ *               - duration
+ *               - country
+ *               - city
+ *               - path
+ *               - device
  *     responses:
  *       200:
  *         description: Usuario actualizado
@@ -578,18 +245,22 @@ app.post('/usersIntoPage', async (req: Request, res: Response) => {
  *         description: Usuario no encontrado
  */
 app.put('/usersIntoPage/:id', async (req: Request, res: Response) => {
-  const idUserGetIntoPage = req.params.id;
+  const userId = req.params.id;
   const updatedUser = req.body;
   try {
-    const filePath = path.join(__dirname, './usersIntoPage.json');
-    const data = await readJson(filePath);
-    const index = data.findIndex((u: any) => u.idUserGetIntoPage === idUserGetIntoPage);
+    const result = await query('UPDATE user_data SET date = $1, time = $2, duration = $3, country = $4, city = $5, path = $6, device = $7 WHERE user_id = $8 RETURNING *', [
+      updatedUser.date,
+      updatedUser.time,
+      updatedUser.duration,
+      updatedUser.country,
+      updatedUser.city,
+      updatedUser.path,
+      updatedUser.device,
+      userId
+    ]);
 
-    if (index !== -1) {
-      data[index] = { ...data[index], ...updatedUser };
-      await writeJson(filePath, data);
-      
-      res.json(data[index]);
+    if (result.length > 0) {
+      res.json(result[0]);
     } else {
       res.status(404).send('Usuario no encontrado');
     }
@@ -602,7 +273,7 @@ app.put('/usersIntoPage/:id', async (req: Request, res: Response) => {
  * @swagger
  * /usersIntoPage/{id}:
  *   delete:
- *     summary: Eliminar un usuario por idUserGetIntoPage
+ *     summary: Eliminar un usuario por user_id
  *     parameters:
  *       - in: path
  *         name: id
@@ -617,15 +288,11 @@ app.put('/usersIntoPage/:id', async (req: Request, res: Response) => {
  *         description: Usuario no encontrado
  */
 app.delete('/usersIntoPage/:id', async (req: Request, res: Response) => {
-  const idUserGetIntoPage = req.params.id;
+  const userId = req.params.id;
   try {
-    const filePath = path.join(__dirname, './usersIntoPage.json');
-    let data = await readJson(filePath);
-    const initialLength = data.length;
-    data = data.filter((u: any) => u.idUserGetIntoPage !== String(idUserGetIntoPage));
+    const result = await query('DELETE FROM user_data WHERE user_id = $1 RETURNING *', [userId]);
 
-    if (data.length < initialLength) {
-      await writeJson(filePath, data);
+    if (result.length > 0) {
       res.status(204).send();
     } else {
       res.status(404).send('Usuario no encontrado');
