@@ -67,9 +67,24 @@ app.get('/', (req: Request, res: Response) => {
  *               type: array
  */
 app.get('/usersIntoPage', async (req: Request, res: Response) => {
+  const limit = parseInt(req.query.limit as string) || 100; // Número de items por página (por defecto 100)
+  const page = parseInt(req.query.page as string) || 1; // Número de página (por defecto la primera)
+
+  const offset = (page - 1) * limit;
+
   try {
-    const result = await query('SELECT * FROM user_data');
-    res.json(result);
+    const result = await query('SELECT * FROM user_data LIMIT $1 OFFSET $2', [limit, offset]);
+    const totalItems = await query('SELECT COUNT(*) FROM user_data'); // Obtener el total de items
+
+    res.json({
+      data: result,
+      meta: {
+        currentPage: page,
+        totalItems: totalItems[0].count, // Asumiendo que el conteo es el primer valor devuelto
+        totalPages: Math.ceil(totalItems[0].count / limit),
+        itemsPerPage: limit
+      }
+    });
   } catch (error) {
     errorHandler(res, 500, 'Error al leer la base de datos de usuarios');
   }
